@@ -1,11 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>CMX Airport Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #1e1e2f;
+            color: white;
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card {
+            background: #2c2c3e;
+            margin: 15px;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+        }
+        
+        video  {
+            width: 80%;
+            max-width: 900px;
+            border-radius: 10px;
+            border: 2px solid #444;
+        }
+
+        .forecast-item {
+            margin: 8px 0;
+            padding: 8px;
+            background: #3a3a50;
+            border-radius: 6px;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>This is an example</h1>
+
+    <h1>CMX Airport Live Dashboard</h1>
+
+    <div class="card">
+        <h2>Live Airport Webcam</h2>
+        <video id="cam" muted="" preload="none" src="blob:{{webcam_url}}" poster="https://s161.ipcamlive.com/streams/a1aki2psvb7e3yhu0/snapshot.jpg">Your browser does not capable to play this content.</video>
+    </div>
+
+    <div class="card">
+        <h2>Current Weather</h2>
+        <p><strong>{{ weather.city }}</strong></p>
+        <p>Temperature: {{ weather.temp }} °F</p>
+        <p>Condition: {{ weather.description }}</p>
+        <p>Wind: {{ weather.wind }} mph</p>
+    </div>
+
+    <div class="card">
+        <h2>Next 24 Hours</h2>
+
+        {% for item in forecast %}
+            <div class="forecast-item">
+                <p>{{ item.time }}</p>
+                <p>{{ item.temp }} °F</p>
+                <p>{{ item.description }}</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+            setInterval(()=> { 
+                const vid = document.getElementById("cam");
+                vid.src = "{{ webcam_url}}?t=" + new Date().getTime();
+            }, 10000);
+    </script>
+
 </body>
 </html>
