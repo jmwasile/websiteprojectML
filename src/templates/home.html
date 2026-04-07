@@ -1,30 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CMX Airport Dashboard</title>
+    <title>CMX Airport Live System</title>
 
     <style>
         body {
             font-family: Arial;
-            background: #1e1e2f;
+            background: #0b1220;
             color: white;
             text-align: center;
         }
 
-        .container {
+        .grid {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
         }
 
         .card {
-            background: #2c2c3e;
-            margin: 15px;
-            padding: 20px;
-            border-radius: 10px;
-            width: 300px;
+            background: #1f2a44;
+            margin: 12px;
+            padding: 15px;
+            border-radius: 12px;
+            width: 340px;
         }
-        
+
+        .flight {
+            background: #334155;
+            margin: 6px 0;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: left;
+        }
+
         video  {
             width: 80%;
             max-width: 900px;
@@ -32,50 +40,82 @@
             border: 2px solid #444;
         }
 
-        .forecast-item {
-            margin: 8px 0;
-            padding: 8px;
-            background: #3a3a50;
-            border-radius: 6px;
+        input, button {
+            padding: 6px;
+            margin: 5px;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>CMX Airport Live Dashboard</h1>
+    <h1>🛫 CMX Airport Live System</h1>
 
-    <div class="card">
-        <h2>Live Airport Webcam</h2>
-        <video id="cam" muted="" preload="none" src="blob:{{webcam_url}}" poster="https://s161.ipcamlive.com/streams/a1aki2psvb7e3yhu0/snapshot.jpg">Your browser does not capable to play this content.</video>
+    <!-- 📅 DATE SEARCH -->
+    <form method="POST">
+        <input type="date" name="date" value="{{ selected_date }}">
+        <button type="submit">Search</button>
+    </form>
+
+    <p>
+        Quick:
+        {% for d in past_2 %} {{ d }} | {% endfor %}
+        {{ tomorrow }}
+    </p>
+
+    <div class="grid">
+
+        <!-- 🎥 CAMERA -->
+        <div class="card">
+            <h2>Live Webcam</h2>
+            <video id="cam" muted="" preload="none" src="blob:{{webcam_url}}" poster="https://s161.ipcamlive.com/streams/a1aki2psvb7e3yhu0/snapshot.jpg">Your browser does not capable to play this content.</video>
+        </div>
+
+        <!-- 🌡️ WEATHER -->
+        <div class="card">
+            <h2>Weather</h2>
+            <p><b>{{ weather.city }}</b></p>
+            <p>{{ weather.temp }} °F</p>
+            <p>{{ weather.desc }}</p>
+            <p>Wind: {{ weather.wind }} mph</p>
+        </div>
+
+        <!-- 🛬 ARRIVALS -->
+        <div class="card">
+            <h2>Arrivals</h2>
+
+            {% for f in arrivals %}
+                <div class="flight">
+                    <b>{{ f.airline }}</b><br>
+                    {{ f.flight }}<br>
+                    From: {{ f.origin }}<br>
+                    {{ f.scheduled }}<br>
+                    Status: {{ f.status }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- 🛫 DEPARTURES -->
+        <div class="card">
+            <h2>Departures</h2>
+
+            {% for f in departures %}
+                <div class="flight">
+                    <b>{{ f.airline }}</b><br>
+                    {{ f.flight }}<br>
+                    To: {{ f.destination }}<br>
+                    {{ f.scheduled }}<br>
+                    Status: {{ f.status }}
+                </div>
+            {% endfor %}
+        </div>
+
     </div>
-
-    <div class="card">
-        <h2>Current Weather</h2>
-        <p><strong>{{ weather.city }}</strong></p>
-        <p>Temperature: {{ weather.temp }} °F</p>
-        <p>Condition: {{ weather.description }}</p>
-        <p>Wind: {{ weather.wind }} mph</p>
-    </div>
-
-    <div class="card">
-        <h2>Next 24 Hours</h2>
-
-        {% for item in forecast %}
-            <div class="forecast-item">
-                <p>{{ item.time }}</p>
-                <p>{{ item.temp }} °F</p>
-                <p>{{ item.description }}</p>
-            </div>
-        {% endfor %}
-    </div>
-
     <script>
-            setInterval(()=> { 
-                const vid = document.getElementById("cam");
-                vid.src = "{{ webcam_url}}?t=" + new Date().getTime();
-            }, 10000);
+    setInterval(()=> { 
+        const vid = document.getElementById("cam");
+        vid.src = "{{ webcam_url}}?t=" + new Date().getTime();
+        }, 10000);
     </script>
-
 </body>
 </html>

@@ -1,48 +1,85 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import requests
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
-API_KEY = "97fdc990d5ad61975eacbea9547cb148"
+WEATHER_KEY = "97fdc990d5ad61975eacbea9547cb148"
+FLIGHT_KEY = "cebfb3a62ef5e0b59402e7ca184c707e"
+
 ZIP = "49931,US"
+AIRPORT = "CMX"
 
-WEBCAM_URL = "https://g1.ipcamlive.com/d20c1d26-cc9e-4c07-b443-41b003ffe823"
+CAMERA_EMBED = "https://g1.ipcamlive.com/d20c1d26-cc9e-4c07-b443-41b003ffe823"
 
 
-@app.route("/")
-def home():
-
-    weather_url = f"https://api.openweathermap.org/data/2.5/weather?zip={ZIP}&appid={API_KEY}&units=imperial"
-    weather_res = requests.get(weather_url)
-    weather_data = weather_res.json()
-
-    weather = {
-        "city": weather_data["name"],
-        "temp": weather_data["main"]["temp"],
-        "description": weather_data["weather"][0]["description"],
-        "wind": weather_data["wind"]["speed"]
+# ---------------- WEATHER ----------------
+def get_weather():
+    url = f"https://api.openweathermap.org/data/2.5/weather?zip={ZIP}&appid={WEATHER_KEY}&units=imperial"
+    data = requests.get(url).json()
+    print(data)
+    
+    return {
+        "city": data["name"],
+        "temp": data["main"]["temp"],
+        "desc": data["weather"][0]["description"],
+        "wind": data["wind"]["speed"]
     }
 
-    forecast_url = f"https://api.openweathermap.org/data/2.5/forecast?zip={ZIP}&appid={API_KEY}&units=imperial"
-    forecast_res = requests.get(forecast_url)
-    forecast_data = forecast_res.json()
 
-    forecast = []
+# ---------------- FLIGHTS ----------------
+def get_flights(date):
+    url = f"http://api.aviationstack.com/v1/flights?access_key={FLIGHT_KEY}&dep_iata={AIRPORT}&flight_date={date}"
+    data = requests.get(url).json()
 
-    for item in forecast_data["list"][:8]:
-        forecast.append({
-            "time": item["dt_txt"],
-            "temp": item["main"]["temp"],
-            "description": item["weather"][0]["description"]
-        })
+    arrivals = []
+    departures = []
+
+    for f in data.get("data", []):
+        flight_info = {
+            "airline": f.get("airline", {}).get("name", "N/A"),
+            "flight": f.get("flight", {}).get("iata", "N/A"),
+            "origin": f.get("departure", {}).get("airport", "N/A"),
+            "destination": f.get("arrival", {}).get("airport", "N/A"),
+            "scheduled": f.get("departure", {}).get("scheduled", "N/A"),
+            "actual": f.get("departure", {}).get("actual", "N/A"),
+            "status": f.get("flight_status", "N/A"),
+            "gate": f.get("departure", {}).get("gate", "N/A")
+        }
+
+        # classify properly
+        if f.get("flight_status") == "landed":
+            arrivals.append(flight_info)
+        else:
+            departures.append(flight_info)
+
+    return arrivals, departures
+
+
+# ---------------- HOME ----------------
+@app.route("/", methods=["GET", "POST"])
+def home():
+
+    selected_date = request.form.get("date") or datetime.now().strftime("%Y-%m-%d")
+
+    weather = get_weather()
+
+    arrivals, departures = get_flights(selected_date)
+
+    today = datetime.now()
+    past_2 = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(1, 3)]
+    tomorrow = (today + timedelta(days=1)).strftime("%Y-%m-%d")
 
     return render_template(
         "home.html",
         weather=weather,
-        forecast=forecast,
-        webcam_url=WEBCAM_URL
+        arrivals=arrivals[:5],
+        departures=departures[:5],
+        selected_date=selected_date,
+        past_2=past_2,
+        tomorrow=tomorrow,
+        camera_embed=CAMERA_EMBED
     )
-
 
 if __name__ == "__main__":
     app.run(debug=True)
